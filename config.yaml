@@ -1,0 +1,15 @@
+batch_size: 8
+epoch: 10
+use_class_weigths: false
+model:
+  _target_: src.model.Classifier
+  num_classes: 3
+  num_features: 13
+optimizer:
+  _partial_: false
+  _target_: torch.optim.Adam
+  lr: 1e-2
+  weight_decay: 1
+loss_func:
+  _partial_: false
+  _target_: torch.nn.CrossEntropyLoss
