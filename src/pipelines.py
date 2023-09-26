@@ -36,13 +36,14 @@ def train(
         test_preds = []
         test_targets = []
         model.eval()
-        for features, targets in tqdm(test_dataloder, desc="test"):
-            targets = torch.tensor(targets).long().to(device)
-            preds = model(features.to(torch.float32).to(device))
-            test_preds.extend(preds.argmax(-1))
-            test_targets.extend(targets)
-            loss = loss_func(preds, targets)
-            test_losses.append(loss.item())
+        with torch.no_grad():
+            for features, targets in tqdm(test_dataloder, desc="test"):
+                targets = torch.tensor(targets).long().to(device)
+                preds = model(features.to(torch.float32).to(device))
+                test_preds.extend(preds.argmax(-1))
+                test_targets.extend(targets)
+                loss = loss_func(preds, targets)
+                test_losses.append(loss.item())
 
         print(classification_report(test_targets, test_preds))
 
