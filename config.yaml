@@ -1,6 +1,9 @@
 batch_size: 8
-epoch: 10
-use_class_weigths: false
+epoch: 50
+use_class_weigths: true
+seed: 89
+path_save_test_predictions_csv: test_predictions.csv
+path_save_best_model: best_model.pt
 model:
   _target_: src.model.Classifier
   num_classes: 3
@@ -8,8 +11,7 @@ model:
 optimizer:
   _partial_: false
   _target_: torch.optim.Adam
-  lr: 1e-2
-  weight_decay: 1
+  lr: 1e-3
 loss_func:
   _partial_: false
   _target_: torch.nn.CrossEntropyLoss

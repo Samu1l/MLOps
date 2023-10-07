@@ -1,32 +1,50 @@
+from pathlib import Path
+from typing import Callable
+
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
-
-from tqdm import tqdm
-
-from typing import Callable
 from matplotlib import pyplot as plt
 from sklearn.metrics import classification_report
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
+
+def inference(model, dataloder, device):
+    preds_all = []
+    targets_all = []
+    model.eval()
+    with torch.no_grad():
+        for features, targets in dataloder:
+            targets = targets.long().to(device)
+            preds = model(features.to(torch.float32).to(device))
+            preds_all.extend(preds.argmax(-1).tolist())
+            targets_all.extend(targets.tolist())
+    print(
+        classification_report(
+            targets_all, preds_all, zero_division=0, output_dict=False
+        )
+    )
+    return preds_all, targets_all
 
 
 def train(
-          epoch: int,
-          model: nn.Module, 
-          train_dataloder: DataLoader, 
-          test_dataloder: DataLoader,
-          loss_func: Callable,
-          optimizer: torch.optim,
-          device: str
+    epoch: int,
+    model: nn.Module,
+    train_dataloder: DataLoader,
+    test_dataloder: DataLoader,
+    loss_func: Callable,
+    optimizer: torch.optim,
+    device: str,
+    path_save_best_model: Path,
 ):
+    best_accuracy = 0
     train_losses = []
     test_losses = []
-    for epoch_idx in range(epoch):
-        print("Epoch:", epoch_idx)
+    for _ in tqdm(range(epoch), desc="Epoch"):
         model.train()
-        for features, targets in tqdm(train_dataloder, desc="train"):
+        for features, targets in train_dataloder:
             optimizer.zero_grad()
-            targets = torch.tensor(targets).long().to(device)
+            targets = targets.long().to(device)
             preds = model(features.to(torch.float32).to(device))
             loss = loss_func(preds, targets)
             train_losses.append(loss.item())
@@ -37,22 +55,27 @@ def train(
         test_targets = []
         model.eval()
         with torch.no_grad():
-            for features, targets in tqdm(test_dataloder, desc="test"):
-                targets = torch.tensor(targets).long().to(device)
+            for features, targets in test_dataloder:
+                targets = targets.long().to(device)
                 preds = model(features.to(torch.float32).to(device))
-                test_preds.extend(preds.argmax(-1))
-                test_targets.extend(targets)
+                test_preds.extend(preds.argmax(-1).tolist())
+                test_targets.extend(targets.tolist())
                 loss = loss_func(preds, targets)
                 test_losses.append(loss.item())
 
-        print(classification_report(test_targets, test_preds))
+        tmp_metrics = classification_report(
+            test_targets, test_preds, zero_division=0, output_dict=True
+        )
+        if tmp_metrics["accuracy"] > best_accuracy:
+            best_accuracy = tmp_metrics["accuracy"]
+            torch.save(model, path_save_best_model)
 
     plt.plot(train_losses)
     plt.title("Train losses")
-    plt.savefig(f"/Users/s.burovin/Documents/HW/11sem/MLOps/Train losses.png")
+    plt.savefig(path_save_best_model.parent / "Train losses.png")
     plt.clf()
 
     plt.plot(test_losses)
     plt.title("Test losses")
-    plt.savefig(f"/Users/s.burovin/Documents/HW/11sem/MLOps/Test losses.png")
+    plt.savefig(path_save_best_model.parent / "Test losses.png")
     return model

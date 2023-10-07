@@ -1,6 +1,5 @@
-from torch.utils.data import Dataset
-
 import numpy as np
+from torch.utils.data import Dataset
 
 
 class WineDataset(Dataset):
@@ -10,7 +9,7 @@ class WineDataset(Dataset):
 
     def __len__(self):
         return len(self.y)
-    
+
     def __getitem__(self, idx) -> (np.ndarray, int):
         feature = self.X[idx]
         target = self.y[idx]
