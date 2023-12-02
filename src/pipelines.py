@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List
 
 import torch
 import torch.nn as nn
@@ -9,22 +9,14 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 
-def inference(model, dataloder, device):
+def inference(model: nn.Module, dataloder: DataLoader, device) -> List[int]:
     preds_all = []
-    targets_all = []
     model.eval()
     with torch.no_grad():
-        for features, targets in dataloder:
-            targets = targets.long().to(device)
+        for features, _ in dataloder:
             preds = model(features.to(torch.float32).to(device))
             preds_all.extend(preds.argmax(-1).tolist())
-            targets_all.extend(targets.tolist())
-    print(
-        classification_report(
-            targets_all, preds_all, zero_division=0, output_dict=False
-        )
-    )
-    return preds_all, targets_all
+    return preds_all
 
 
 def train(
@@ -36,7 +28,7 @@ def train(
     optimizer: torch.optim,
     device: str,
     path_save_best_model: Path,
-):
+) -> nn.Module:
     best_accuracy = 0
     train_losses = []
     test_losses = []
@@ -63,9 +55,7 @@ def train(
                 loss = loss_func(preds, targets)
                 test_losses.append(loss.item())
 
-        tmp_metrics = classification_report(
-            test_targets, test_preds, zero_division=0, output_dict=True
-        )
+        tmp_metrics = classification_report(test_targets, test_preds, zero_division=0, output_dict=True)
         if tmp_metrics["accuracy"] > best_accuracy:
             best_accuracy = tmp_metrics["accuracy"]
             torch.save(model, path_save_best_model)

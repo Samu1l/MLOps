@@ -1,0 +1,11 @@
+defaults:
+  - data
+  - _self_
+
+is_target_in_data: true
+
+infer_data_path: data/test.csv
+save_predictions_path: data/predictions.csv
+saved_best_model_path: weigths/best_model.pt
+
+batch_size: 16

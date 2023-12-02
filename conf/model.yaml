@@ -1,0 +1,4 @@
+model:
+  _target_: src.model.Classifier
+  num_classes: 3
+  num_features: 13

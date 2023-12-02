@@ -1,37 +1,47 @@
 from pathlib import Path
 
 import hydra
+import pandas as pd
 import torch
 from omegaconf import DictConfig
+from sklearn.metrics import classification_report
 from torch.utils.data import DataLoader
 
 from src.dataset import WineDataset
 from src.pipelines import inference
-from src.utils import prepare_data, seed_everything
 
 
-@hydra.main(config_path=".", config_name="config", version_base="1.2")
+@hydra.main(config_path="conf", config_name="infer", version_base="1.2")
 def main(cfg: DictConfig):
-    seed_everything(cfg.seed)
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    _, X_test, _, y_test, _, df_test = prepare_data(return_test_dataframe=True)
+    df_infer = pd.read_csv(cfg.infer_data_path)
+    X_infer = df_infer[cfg.feature_name_fields].to_numpy()
 
-    test_dataset = WineDataset(X_test, y_test)
-    test_dataloader = DataLoader(
-        test_dataset, batch_size=cfg["batch_size"], shuffle=False
-    )
+    if cfg.is_target_in_data:
+        y_infer = df_infer[cfg.target_name_field].to_numpy()
+    else:
+        y_infer = None
 
-    model = torch.load(Path(__file__).parent / cfg.path_save_best_model)
+    infer_dataset = WineDataset(X_infer, y_infer)
+    infer_dataloader = DataLoader(infer_dataset, batch_size=cfg.batch_size, shuffle=False)
+
+    model = torch.load(Path(__file__).parent / cfg.saved_best_model_path)
     model.to(device)
 
-    preds_all, _ = inference(model, test_dataloader, device)
-    df_test["prediction"] = preds_all
+    preds_all = inference(model, infer_dataloader, device)
+    df_infer["prediction"] = preds_all
 
-    df_test.to_csv(
-        Path(__file__).parent / cfg.path_save_test_predictions_csv, index=False
-    )
+    if cfg.is_target_in_data:
+        print(
+            classification_report(
+                df_infer[cfg.target_name_field], df_infer["prediction"], zero_division=0, output_dict=False
+            )
+        )
+
+    path_to_save_results = Path(__file__).parent / cfg.save_predictions_path
+    path_to_save_results.parent.mkdir(parents=True, exist_ok=True)
+    df_infer.to_csv(path_to_save_results, index=False)
 
 
 if __name__ == "__main__":

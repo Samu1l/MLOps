@@ -17,6 +17,7 @@ repos:
     rev: 22.3.0
     hooks:
       - id: black
+        args: [--line-length, "120"]
 
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
@@ -28,6 +29,11 @@ repos:
     hooks:
       - id: flake8
         additional_dependencies: [flake8-bugbear]
+        args:
+          [
+            "--extend-ignore",
+            "E501",
+          ]
 
   # - repo: https://github.com/nbQA-dev/nbQA
   #   rev: 1.3.1
