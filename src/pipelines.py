@@ -1,9 +1,11 @@
 from pathlib import Path
 from typing import Callable, List
 
+import mlflow
+import onnx
 import torch
 import torch.nn as nn
-from matplotlib import pyplot as plt
+from mlflow.models import infer_signature
 from sklearn.metrics import classification_report
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -28,10 +30,13 @@ def train(
     optimizer: torch.optim,
     device: str,
     path_save_best_model: Path,
-) -> nn.Module:
+    model_artifact_path: str,
+    registered_model_name: str,
+):
     best_accuracy = 0
     train_losses = []
     test_losses = []
+    # with mlflow.start_run():
     for _ in tqdm(range(epoch), desc="Epoch"):
         model.train()
         for features, targets in train_dataloder:
@@ -40,6 +45,7 @@ def train(
             preds = model(features.to(torch.float32).to(device))
             loss = loss_func(preds, targets)
             train_losses.append(loss.item())
+            mlflow.log_metric("train_loss", loss.item())
             loss.backward()
             optimizer.step()
 
@@ -53,19 +59,27 @@ def train(
                 test_preds.extend(preds.argmax(-1).tolist())
                 test_targets.extend(targets.tolist())
                 loss = loss_func(preds, targets)
+                mlflow.log_metric("test_loss", loss.item())
                 test_losses.append(loss.item())
 
         tmp_metrics = classification_report(test_targets, test_preds, zero_division=0, output_dict=True)
+        mlflow.log_metric("test_accuracy", tmp_metrics["accuracy"])
+        mlflow.log_metric("test_macro_precision", tmp_metrics["macro avg"]["precision"])
+        mlflow.log_metric("test_macro_recall", tmp_metrics["macro avg"]["recall"])
         if tmp_metrics["accuracy"] > best_accuracy:
             best_accuracy = tmp_metrics["accuracy"]
-            torch.save(model, path_save_best_model)
-
-    plt.plot(train_losses)
-    plt.title("Train losses")
-    plt.savefig(path_save_best_model.parent / "Train losses.png")
-    plt.clf()
-
-    plt.plot(test_losses)
-    plt.title("Test losses")
-    plt.savefig(path_save_best_model.parent / "Test losses.png")
-    return model
+            torch.save(model, str(path_save_best_model).rsplit(".", 1)[0] + ".pt")
+            dynamic_axes = {"input": {0: "batch_size"}, "output": {0: "batch_size"}}
+            torch.onnx.export(
+                model,
+                features.to(torch.float32).to(device),
+                path_save_best_model,
+                input_names=["input"],
+                output_names=["output"],
+                dynamic_axes=dynamic_axes,
+            )
+    onnx_model = onnx.load_model(path_save_best_model)
+    signature = infer_signature(features.to(torch.float32).numpy(), preds.detach().numpy())
+    mlflow.onnx.log_model(
+        onnx_model, model_artifact_path, registered_model_name=registered_model_name, signature=signature
+    )

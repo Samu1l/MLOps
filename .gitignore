@@ -162,4 +162,8 @@ cython_debug/
 
 .DS_Store
 trash*
-outputs*
+outputs/**/*
+mlruns/**/*
+mlartifacts/**/*
+weights/**/*
+result/**/*

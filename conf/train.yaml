@@ -1,4 +1,5 @@
 defaults:
+  - mlflow
   - data
   - model
   - _self_
@@ -12,11 +13,13 @@ loss_func:
   _partial_: false
   _target_: torch.nn.CrossEntropyLoss
 
-dvc_dir_to_load: data
+experiment_name: wine_classification
 
 test_data_path: data/test.csv
 train_data_path: data/train.csv
-save_best_model_path: weigths/best_model.pt
+save_best_model_path: weights/best_model.onnx
+
+model_artifact_path: weights/best_model
 
 seed: 42
 batch_size: 8
