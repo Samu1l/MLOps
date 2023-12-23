@@ -1,3 +1,4 @@
+import pickle
 from pathlib import Path
 
 import hydra
@@ -15,6 +16,9 @@ from src.dataset import WineDataset
 def main(cfg: DictConfig):
     mlflow.set_tracking_uri(uri=cfg.mlflow_uri)
 
+    with open(cfg.saved_scaler_path, "rb") as scaler_file:
+        scaler = pickle.load(scaler_file)
+
     df_infer = pd.read_csv(cfg.infer_data_path)
     X_infer = df_infer[cfg.feature_name_fields].to_numpy()
     if cfg.is_target_in_data:
@@ -22,7 +26,7 @@ def main(cfg: DictConfig):
     else:
         y_infer = None
 
-    infer_dataset = WineDataset(X_infer, y_infer)
+    infer_dataset = WineDataset(X_infer, y_infer, scaler)
     infer_dataloader = DataLoader(infer_dataset, batch_size=cfg.batch_size, shuffle=False)
 
     onnx_model = mlflow.pyfunc.load_model(cfg.model_uri)

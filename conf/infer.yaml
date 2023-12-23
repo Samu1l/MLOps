@@ -8,5 +8,6 @@ infer_data_path: data/test.csv
 save_predictions_path: result/predictions.csv
 
 saved_best_model_path: weights/best_model.pt
+saved_scaler_path: assets/scaler.pkl
 
 batch_size: 16

@@ -1,0 +1,27 @@
+name: "python-scaler"
+backend: "python"
+max_batch_size: 0
+
+
+input [
+    {
+        name: "feature"
+        data_type: TYPE_FP32
+        dims: [ -1, 13 ]
+    }
+]
+
+output [
+    {
+        name: "input"
+        data_type: TYPE_FP32
+        dims: [ -1, 13 ]
+    }
+]
+
+instance_group [
+    {
+        count: 1
+        kind: KIND_CPU
+    }
+]

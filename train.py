@@ -1,3 +1,4 @@
+import pickle
 from pathlib import Path
 
 import git
@@ -9,6 +10,7 @@ import torch
 from dvc.api import DVCFileSystem
 from hydra.utils import instantiate
 from omegaconf import DictConfig
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils.class_weight import compute_class_weight
 from torch.utils.data import DataLoader
 
@@ -35,6 +37,10 @@ def main(cfg: DictConfig):
         df_train[cfg.target_name_field].to_numpy(),
     )
 
+    scaler = MinMaxScaler(feature_range=(0, 1)).fit(X_train)
+    with open(cfg.save_scaler_path, "wb") as scale_file:
+        pickle.dump(scaler, scale_file)
+
     if not (Path(__file__).parent / cfg.test_data_path).exists():
         dvc_fs.get_file(cfg.test_data_path, cfg.test_data_path)
     df_test = pd.read_csv(cfg.test_data_path)
@@ -51,8 +57,8 @@ def main(cfg: DictConfig):
     else:
         class_weigths = None
 
-    train_dataset = WineDataset(X_train, y_train)
-    test_dataset = WineDataset(X_test, y_test)
+    train_dataset = WineDataset(X_train, y_train, scaler)
+    test_dataset = WineDataset(X_test, y_test, scaler)
     train_dataloader = DataLoader(train_dataset, batch_size=cfg["batch_size"], shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=cfg["batch_size"], shuffle=False)
 

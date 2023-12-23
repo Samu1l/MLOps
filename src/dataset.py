@@ -2,13 +2,14 @@ from typing import Optional
 
 import numpy as np
 from numpy.typing import ArrayLike
-from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import Dataset
 
 
 class WineDataset(Dataset):
-    def __init__(self, X: ArrayLike, y: Optional[ArrayLike] = None):
-        self.X = MinMaxScaler(feature_range=(0, 1)).fit_transform(X)
+    def __init__(self, X: ArrayLike, y: Optional[ArrayLike] = None, scaler=None):
+        if scaler is not None:
+            X = scaler.transform(X)
+        self.X = X
         self.y = y
 
     def __len__(self):

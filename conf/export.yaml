@@ -1,0 +1,3 @@
+saved_best_model_path: weights/best_model.pt
+saved_scaler_path: assets/scaler.pkl
+save_best_model_onnx_format: model_repository/onnx-classifier/1/model.onnx

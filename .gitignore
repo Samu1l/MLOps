@@ -165,5 +165,4 @@ trash*
 outputs/**/*
 mlruns/**/*
 mlartifacts/**/*
-weights/**/*
 result/**/*

@@ -19,6 +19,8 @@ test_data_path: data/test.csv
 train_data_path: data/train.csv
 save_best_model_path: weights/best_model.onnx
 
+save_scaler_path: assets/scaler.pkl
+
 model_artifact_path: weights/best_model
 
 seed: 42
